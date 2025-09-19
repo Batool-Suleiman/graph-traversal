@@ -5,3 +5,5 @@ Features: Generate random graphs. Generate random graphs with weighted edges. Vi
 Technologies: HTML, CSS, JavaScript, SVG for graph visualization, TailwindCSS for styling
 
 How to Run: Clone the repository: git clone https://github.com/Batool-Suleiman/graph-traversal.git, Open index.html in your browser.
+
+Live demo: https://batool-suleiman.github.io/graph-traversal/ 
