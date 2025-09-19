@@ -1,0 +1,1113 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap"
+      rel="stylesheet"
+    />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Graph Traversal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      @import url("https://fonts.googleapis.com/css2?family=Patrick+Hand&display=swap");
+      body {
+        background: radial-gradient(ellipse at top, #0b0c1b 0%, #030310 100%);
+        font-family: "Patrick Hand", cursive;
+        overflow-x: hidden;
+        overflow-y: auto;
+      }
+      .sketch-header {
+        position: relative;
+        text-align: center;
+        padding: 2rem 1rem;
+        background: linear-gradient(
+          to bottom,
+          rgba(52, 51, 51, 0.3),
+          transparent
+        );
+        color: #333;
+        font-family: "Patrick Hand", cursive;
+        overflow: hidden;
+      }
+      .sketch-header h1 {
+        font-size: 3rem;
+        margin: 0;
+        color: #ffffffed;
+        text-shadow: 0 0 5px #00f7ffc1, 0 0 10px #00f7ffc1, 0 0 20px #00f7ffc1;
+      }
+      .sketch-header .motto {
+        font-size: 1.4rem;
+        color: #959595;
+        margin-top: 0.3rem;
+      }
+      .header-content {
+        filter: url(#handDrawnStroke);
+        position: relative;
+        display: inline-block;
+        padding: 0.5rem 1rem;
+      }
+      .comet {
+        position: absolute;
+        top: 35px;
+        left: 40%;
+        width: 12px;
+        height: 12px;
+        background: radial-gradient(white, #f0f0f0, #aaa);
+        border-radius: 50%;
+        box-shadow: 0 0 6px #fff;
+        animation: orbit 6s linear infinite;
+        transform-origin: center center;
+        z-index: -1;
+      }
+      @keyframes orbit {
+        0% {
+          transform: rotate(0deg) translateX(50px) rotate(0deg);
+        }
+        100% {
+          transform: rotate(360deg) translateX(50px) rotate(-360deg);
+        }
+      }
+      text {
+        font-family: "Patrick Hand", cursive;
+        font-weight: 400;
+        pointer-events: none;
+        transition: font-size 0.3s ease, fill 0.3s ease;
+        user-select: none;
+        filter: url(#handDrawnStroke);
+      }
+      .node {
+        fill: #e7e5c7;
+        stroke: #333;
+        stroke-width: 2;
+        filter: url(#handDrawnStroke);
+        transition: filter 0.3s ease, box-shadow 0.3s ease;
+        cursor: pointer;
+        transform-origin: center;
+      }
+      .node-label {
+        fill: black;
+        font-size: 22px;
+        font-family: "Patrick Hand", cursive;
+        pointer-events: none;
+        user-select: none;
+        transform-origin: center;
+      }
+      .node:hover {
+        filter: url(#handDrawnStroke);
+        filter: drop-shadow(0 0 4px rgba(255, 200, 100, 0.7))
+          url(#handDrawnStroke);
+        animation: wiggle 0.3s ease;
+      }
+      .active-label {
+        font-size: 24px !important;
+        font-weight: 700;
+        transform-origin: center;
+      }
+      .node,
+      .node-label {
+        animation: none;
+      }
+      @keyframes wiggle {
+        0%,
+        100% {
+          transform: rotate(0deg) translate(0, 0);
+        }
+        25% {
+          transform: rotate(1deg) translate(1px, -1px);
+        }
+        50% {
+          transform: rotate(-1deg) translate(-1px, 1px);
+        }
+        75% {
+          transform: rotate(1deg) translate(1px, 1px);
+        }
+      }
+      .glass {
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 0 20px rgba(255, 255, 255, 0.05);
+      }
+      #graphOutput svg {
+        background-color: transparent !important;
+      }
+      @keyframes pulse-glow {
+        0% {
+          r: 18;
+          filter: drop-shadow(0 0 0px white);
+        }
+        50% {
+          r: 21;
+          filter: drop-shadow(0 0 10px white);
+        }
+        100% {
+          r: 18;
+          filter: drop-shadow(0 0 0px white);
+        }
+      }
+      .node-glow {
+        animation: pulse-glow 0.6s ease-out;
+      }
+      .path-glow {
+        filter: drop-shadow(0 0 6px white) brightness(1.5);
+      }
+      @keyframes edge-glow {
+        from {
+          stroke-dashoffset: 100;
+          opacity: 1;
+        }
+        to {
+          stroke-dashoffset: 0;
+          opacity: 0;
+        }
+      }
+      .edge-glow-line {
+        stroke: white;
+        stroke-width: 3;
+        stroke-dasharray: 100;
+        animation: edge-glow 0.4s ease-out forwards;
+        pointer-events: none;
+      }
+      select#algorithm {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 0.5rem;
+        padding: 0.5rem;
+        color: white;
+        font-weight: 500;
+        box-shadow: 0 0 6px rgba(255, 255, 255, 0.1);
+        transition: border 0.3s, box-shadow 0.3s;
+      }
+      select#algorithm:focus {
+        outline: none;
+        border-color: #00ffe0;
+        box-shadow: 0 0 10px #00ffe0;
+        background-color: rgba(0, 0, 0, 0.3);
+      }
+      input[type="number"] {
+        background: rgba(255, 255, 255, 0.1);
+        border: 1px solid rgba(255, 255, 255, 0.15);
+        border-radius: 0.5rem;
+        padding: 0.35rem 0.5rem;
+        color: white;
+        font-weight: 500;
+        width: 3.5rem;
+        text-align: center;
+        box-shadow: 0 0 6px rgba(255, 255, 255, 0.1);
+        transition: border 0.3s, box-shadow 0.3s;
+      }
+      input[type="number"]:focus {
+        outline: none;
+        border-color: #00ffe0;
+        box-shadow: 0 0 10px #00ffe0;
+        background-color: rgba(0, 0, 0, 0.3);
+      }
+      select#algorithm {
+        width: 7rem;
+        margin-left: 0.5rem;
+      }
+      .weight-text {
+        opacity: 0;
+        transition: opacity 0.3s ease-in-out;
+      }
+      .weight-text.visible {
+        opacity: 1;
+      }
+      .panel {
+        position: fixed;
+        top: 50%;
+        transform: translateY(-50%);
+        transition: transform 0.3s ease-in-out, left 0.3s ease-in-out,
+          right 0.3s ease-in-out;
+        z-index: 20;
+        height: 400px;
+        width: 320px;
+      }
+      .panel-left {
+        font-size: 20px;
+        left: 0;
+        border-top-right-radius: 0.75rem;
+        border-bottom-right-radius: 0.75rem;
+        transform: translateY(-50%) translateX(0); /* Open state */
+      }
+      .panel-right {
+        right: 0;
+        border-top-left-radius: 0.75rem;
+        border-bottom-left-radius: 0.75rem;
+        transform: translateY(-50%) translateX(0);
+      }
+      .panel-left.closed {
+        transform: translateY(-50%) translateX(calc(-100% + 20px));
+      }
+      .panel-right.closed {
+        transform: translateY(-50%) translateX(calc(100% - 20px));
+      }
+      .toggle-button {
+        position: absolute;
+        top: 50%;
+        transform: translateY(-50%);
+        background: rgba(255, 255, 255, 0.05);
+        backdrop-filter: blur(10px);
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        box-shadow: 0 0 20px rgba(255, 255, 255, 0.05);
+        color: white;
+        width: 30px;
+        height: 50px;
+        border-radius: 0.375rem;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: transform 0.3s ease-in-out;
+        z-index: 30;
+      }
+      .panel-left .toggle-button-left {
+        right: -30px;
+        border-top-left-radius: 0;
+        border-bottom-left-radius: 0;
+      }
+      .panel-right .toggle-button-right {
+        left: -30px;
+        border-top-right-radius: 0;
+        border-bottom-right-radius: 0;
+      }
+      .toggle-button svg {
+        stroke: white;
+        stroke-width: 3.5;
+        filter: drop-shadow(0 0 4px rgba(255, 255, 255, 0.5));
+        transition: transform 0.2s ease-in-out, filter 0.2s ease-in-out;
+        filter: url(#handDrawnStroke);
+      }
+      @keyframes buttonWiggle {
+        0%,
+        100% {
+          transform: translateY(-50%) rotate(0deg);
+        }
+        25% {
+          transform: translateY(-50%) rotate(1deg);
+        }
+        50% {
+          transform: translateY(-50%) rotate(-1deg);
+        }
+        75% {
+          transform: translateY(-50%) rotate(1deg);
+        }
+      }
+      .toggle-button:hover {
+        box-shadow: 0 0 12px rgba(255, 255, 255, 0.2);
+        transform: translateY(-50%);
+      }
+      .toggle-button:hover svg {
+        transform: scale(1.2);
+        filter: drop-shadow(0 0 8px rgba(255, 255, 255, 0.8));
+      }
+      #generateBtn,
+      #traverseBtn {
+        background-color: #e7e5c7;
+        color: #111;
+        border: 2px solid #333;
+        filter: url(#handDrawnStroke);
+        transition: background-color 0.2s ease, transform 0.2s ease;
+      }
+      #generateBtn:hover,
+      #traverseBtn:hover {
+        background-color: #d6d4b4;
+        animation: wiggle 0.3s ease;
+      }
+      #logPanel {
+        display: block;
+      }
+      #logPanel div {
+        color: white;
+        font-family: "Patrick Hand", cursive;
+      }
+      #controlPanel .log-section {
+        display: none;
+      }
+      @media (max-width: 640px) {
+        .panel {
+          position: static !important;
+          width: 100% !important;
+          max-width: 100% !important;
+          height: auto !important;
+          transform: none !important;
+          margin-bottom: 1rem;
+          margin-top: 2rem;
+          padding: 1rem !important;
+        }
+        .panel-left,
+        .panel-right {
+          border-radius: 1rem;
+        }
+        .toggle-button {
+          display: none !important;
+        }
+        #controlPanel input,
+        #controlPanel select,
+        #controlPanel button {
+          font-size: 0.875rem;
+          padding: 0.4rem 0.6rem;
+        }
+        #controlPanel label {
+          font-size: 0.9rem;
+        }
+        #graphOutput {
+          transform: scale(0.8);
+        }
+        #logPanel {
+          display: block !important;
+        }
+      }
+      @media (min-width: 640.01px) and (max-width: 1190px) {
+        main {
+          flex-direction: row;
+          align-items: flex-start;
+          justify-content: flex-start;
+          padding: 1rem;
+          gap: 1rem;
+          position: relative;
+          margin-top: 90px;
+        }
+        #controlPanel {
+          position: absolute;
+          transform: none;
+          left: 0;
+          top: 0;
+          width: 40%;
+          max-width: 100%;
+          height: 600px;
+          min-height: 600px;
+          padding: 1.5rem;
+          flex-shrink: 0;
+          overflow-y: auto;
+          border-radius: 0.75rem;
+        }
+        #graphOutput {
+          flex-grow: 1;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          height: 500px;
+          width: 60%;
+          transform: scale(0.7);
+          margin-right: -250px;
+        }
+        #logPanel {
+          display: none !important;
+        }
+        #controlPanel .log-section {
+          display: block;
+          margin-top: 1.5rem;
+          padding-top: 1.5rem;
+          border-top: 1px solid rgba(255, 255, 255, 0.1);
+          max-height: 250px;
+          overflow-y: auto;
+          font-size: 0.85rem;
+        }
+        #controlPanel input,
+        #controlPanel select,
+        #controlPanel button {
+          font-size: 0.875rem;
+          padding: 0.4rem 0.6rem;
+        }
+        #controlPanel label {
+          font-size: 0.9rem;
+        }
+        .toggle-button {
+          display: none !important;
+        }
+      }
+    </style>
+  </head>
+  <body class="text-white min-h-screen flex flex-col">
+    <header class="sketch-header">
+      <div class="header-content">
+        <div class="comet"></div>
+        <h1>Graph Traversal Visualizer</h1>
+        <p class="motto">
+          Explore your graphs in space - an interactive tool for understanding
+          graph algorithms step by step
+        </p>
+      </div>
+    </header>
+    <main
+      class="flex flex-col sm:flex-row justify-center items-center sm:items-stretch w-full px-4 sm:px-8 gap-4 sm:gap-6 flex-1 relative"
+    >
+      <div
+        id="controlPanel"
+        class="glass panel panel-left p-6 rounded-xl flex flex-col space-y-4 text-white w-[90vw] max-w-[320px] h-[90vh] sm:w-80 sm:h-[400px]"
+      >
+        <div class="flex items-center justify-between w-full">
+          <label for="nodeCount" class="text-base"
+            >Number of nodes (1–5):</label
+          >
+          <input
+            id="nodeCount"
+            type="number"
+            min="1"
+            max="5"
+            value="5"
+            class="w-16 text-black px-2 py-1 rounded-lg focus:outline-none"
+          />
+        </div>
+        <button
+          id="generateBtn"
+          class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-2 rounded-xl transition w-full"
+        >
+          Generate Graph
+        </button>
+        <div class="flex items-center justify-between w-full">
+          <label for="sourceNode" class="text-base">Source Node:</label>
+          <input
+            id="sourceNode"
+            type="number"
+            class="w-16 text-black px-2 py-1 rounded-lg focus:outline-none"
+          />
+        </div>
+        <div class="flex items-center justify-between w-full">
+          <label for="destinationNode" class="text-base"
+            >Destination Node:</label
+          >
+          <input
+            id="destinationNode"
+            type="number"
+            class="w-16 text-black px-2 py-1 rounded-lg focus:outline-none"
+          />
+        </div>
+        <div class="flex items-center justify-between w-full">
+          <label for="algorithm" class="text-base">Algorithm:</label>
+          <select
+            id="algorithm"
+            class="w-full text-white bg-transparent px-3 py-2 rounded-lg focus:outline-none font-medium"
+          >
+            <option value="bfs">BFS</option>
+            <option value="dfs">DFS</option>
+            <option value="dijkstra">Dijkstra</option>
+          </select>
+        </div>
+        <button
+          id="traverseBtn"
+          class="bg-teal-600 hover:bg-teal-700 text-white px-6 py-2 rounded-xl transition w-full"
+        >
+          Traverse Graph
+        </button>
+        <div class="log-section">
+          <div class="font-bold">Log:</div>
+          <div id="bfsLog_medium" class="space-y-1"></div>
+        </div>
+        <button
+          id="toggleLeftPanel"
+          class="toggle-button toggle-button-left"
+          aria-label="Toggle Control Panel"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="2.5"
+            stroke="currentColor"
+            class="w-6 h-6"
+            id="leftArrowIcon"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M15.75 19.5 8.25 12l7.5-7.5"
+            />
+          </svg>
+        </button>
+      </div>
+      <div
+        id="graphOutput"
+        class="flex-grow flex justify-center items-center relative z-10"
+      ></div>
+      <div
+        id="logPanel"
+        class="glass panel panel-right max-h-[570px] overflow-y-auto p-4 rounded-lg font-mono text-base"
+      >
+        <div class="font-bold">Log:</div>
+        <div id="bfsLog" class="space-y-1"></div>
+        <button
+          id="toggleRightPanel"
+          class="toggle-button toggle-button-right"
+          aria-label="Toggle Log Panel"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke-width="2.5"
+            stroke="currentColor"
+            class="w-6 h-6"
+            id="rightArrowIcon"
+          >
+            <path
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              d="M8.25 4.5 15.75 12l-7.5 7.5"
+            />
+          </svg>
+        </button>
+      </div>
+      <filter id="starGlow" x="-100%" y="-100%" width="300%" height="300%">
+        <feGaussianBlur stdDeviation="2" result="blur" />
+        <feMerge>
+          <feMergeNode in="blur" />
+          <feMergeNode in="SourceGraphic" />
+        </feMerge>
+      </filter>
+    </main>
+    <svg
+      id="constellationBackground"
+      width="100%"
+      height="100%"
+      viewBox="0 0 2000 1000"
+      style="position: fixed; top: 0; left: 0; z-index: 0; pointer-events: none"
+    >
+      <g fill="#ffffff33" filter="url(#starGlow)">
+        <circle cx="100" cy="120" r="1.2" />
+        <circle cx="250" cy="800" r="1.6" />
+        <circle cx="420" cy="400" r="1.5" />
+        <circle cx="600" cy="180" r="1.8" />
+        <circle cx="750" cy="900" r="1.2" />
+        <circle cx="900" cy="300" r="1.4" />
+        <circle cx="1050" cy="100" r="1.9" />
+        <circle cx="1200" cy="600" r="1.1" />
+        <circle cx="1350" cy="720" r="1.6" />
+        <circle cx="1500" cy="250" r="1.3" />
+        <circle cx="1650" cy="850" r="1.5" />
+        <circle cx="1800" cy="500" r="1.7" />
+        <circle cx="1950" cy="150" r="1.4" />
+      </g>
+    </svg>
+    <svg
+      id="constellationBackground"
+      width="100%"
+      height="100%"
+      viewBox="0 0 2000 1000"
+      style="position: fixed; top: 0; left: 0; z-index: 0; pointer-events: none"
+    >
+      <g
+        filter="url(#handDrawnStroke)"
+        stroke="#ffffff22"
+        stroke-width="0.5"
+        fill="#ffffff33"
+      >
+        <circle cx="120" cy="200" r="1.4" />
+        <circle cx="320" cy="400" r="1.2" />
+        <circle cx="600" cy="180" r="1.7" />
+        <circle cx="900" cy="500" r="1.3" />
+        <circle cx="1300" cy="300" r="1.5" />
+        <circle cx="1700" cy="600" r="1.1" />
+        <circle cx="1900" cy="350" r="1.6" />
+        <circle cx="180" cy="850" r="1.4" />
+        <circle cx="400" cy="720" r="1.2" />
+        <circle cx="1550" cy="800" r="1.6" />
+
+        <line x1="120" y1="200" x2="320" y2="400" />
+        <line x1="600" y1="180" x2="900" y2="500" />
+        <line x1="900" y1="500" x2="1300" y2="300" />
+        <line x1="180" y1="850" x2="400" y2="720" />
+        <line x1="1550" y1="800" x2="1700" y2="600" />
+      </g>
+    </svg>
+    <script>
+      function getRandomInt(min, max) {
+        return Math.floor(Math.random() * (max - min + 1)) + min;
+      }
+      let currentGraph = null;
+      let nodeElements = {};
+      function generateRandomGraph(nodeCount) {
+        const graph = {};
+        for (let from = 0; from < nodeCount; from++) graph[from] = [];
+        for (let from = 0; from < nodeCount; from++) {
+          const edgeCount = getRandomInt(0, 2);
+          const usedTargets = new Set();
+          let attempts = 0;
+          while (graph[from].length < edgeCount && attempts < 1000) {
+            attempts++;
+            const to = getRandomInt(0, nodeCount - 1);
+            if (to === from || usedTargets.has(to)) continue;
+            const already = graph[from].some((e) => e.to === to);
+            if (already) continue;
+            const weight = getRandomInt(1, 50);
+            graph[from].push({ to, weight });
+            if (!graph[to]) graph[to] = [];
+            graph[to].push({ to: from, weight });
+
+            usedTargets.add(to);
+          }
+        }
+        return graph;
+      }
+      function drawGraph(graph, showWeights = true) {
+        const container = document.getElementById("graphOutput");
+        container.innerHTML = "";
+        nodeElements = {};
+        const nodeCount = Object.keys(graph).length;
+        const size = 600;
+        const radius = 250;
+        const nodeRadius = 25;
+        const svg = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "svg"
+        );
+        svg.setAttribute("width", size);
+        svg.setAttribute("height", size);
+        const centerX = size / 2;
+        const centerY = size / 2;
+        const nodePositions = {};
+        for (let i = 0; i < nodeCount; i++) {
+          const angle = (2 * Math.PI * i) / nodeCount;
+          const x = centerX + radius * Math.cos(angle);
+          const y = centerY + radius * Math.sin(angle);
+          nodePositions[i] = { x, y };
+          const circle = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "circle"
+          );
+          circle.setAttribute("cx", x);
+          circle.setAttribute("cy", y);
+          circle.setAttribute("r", nodeRadius);
+          circle.setAttribute("id", `node-${i}`);
+          circle.classList.add("node");
+          nodeElements[i] = circle;
+          svg.appendChild(circle);
+          const label = document.createElementNS(
+            "http://www.w3.org/2000/svg",
+            "text"
+          );
+          label.setAttribute("x", x);
+          label.setAttribute("y", y + 5);
+          label.setAttribute("text-anchor", "middle");
+          label.classList.add("node-label");
+          label.setAttribute("data-node", i);
+          label.textContent = i;
+          svg.appendChild(label);
+        }
+        const drawnEdges = new Set();
+        for (let from in graph) {
+          const fromPos = nodePositions[from];
+          graph[from].forEach(({ to, weight }) => {
+            const key = [from, to].sort().join("-");
+            if (drawnEdges.has(key)) return;
+            drawnEdges.add(key);
+            const toPos = nodePositions[to];
+            const path = document.createElementNS(
+              "http://www.w3.org/2000/svg",
+              "path"
+            );
+            const d = generateRandomCurvedPath(
+              fromPos.x,
+              fromPos.y,
+              toPos.x,
+              toPos.y
+            );
+            path.setAttribute("d", d);
+            path.setAttribute("stroke", "#888");
+            path.setAttribute("stroke-width", "3");
+            path.setAttribute("fill", "none");
+            svg.insertBefore(path, svg.firstChild);
+            if (showWeights) {
+              const midX = (fromPos.x + toPos.x) / 2;
+              const midY = (fromPos.y + toPos.y) / 2;
+              const text = document.createElementNS(
+                "http://www.w3.org/2000/svg",
+                "text"
+              );
+              text.setAttribute("x", midX);
+              text.setAttribute("y", midY);
+              text.setAttribute("text-anchor", "middle");
+              text.setAttribute("fill", "#f2f1db");
+              text.setAttribute("font-size", "18");
+              text.setAttribute("font-weight", "bold");
+              text.textContent = weight;
+              text.setAttribute("class", "weight-text");
+              svg.appendChild(text);
+              requestAnimationFrame(() => {
+                text.classList.add("visible");
+              });
+            }
+          });
+        }
+        container.appendChild(svg);
+      }
+      function activateLabel(id) {
+        const label = document.querySelector(
+          `#graphOutput text[data-node='${id}']`
+        );
+        if (label) {
+          label.classList.remove("active-label");
+          void label.offsetWidth;
+          label.classList.add("active-label");
+        }
+      }
+      function deactivateLabel(id) {
+        const label = document.querySelector(
+          `#graphOutput text[data-node='${id}']`
+        );
+        if (label) label.classList.remove("active-label");
+      }
+      function generateRandomCurvedPath(x1, y1, x2, y2, maxOffset = 15) {
+        const mx = (x1 + x2) / 2;
+        const my = (y1 + y2) / 2;
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const length = Math.hypot(dx, dy);
+        if (length === 0) return `M ${x1} ${y1} L ${x2} ${y2}`;
+        const nx = -dy / length;
+        const ny = dx / length;
+        const offset = (Math.random() * 2 - 1) * maxOffset;
+        const cx = mx + nx * offset;
+        const cy = my + ny * offset;
+        return `M ${x1} ${y1} Q ${cx} ${cy} ${x2} ${y2}`;
+      }
+      function highlightNode(id, color) {
+        const el = nodeElements[id];
+        if (el) {
+          el.classList.remove("node-glow");
+          void el.offsetWidth;
+          el.classList.add("node-glow");
+        }
+      }
+      function highlightPath(path, color) {
+        for (let node of path) {
+          const el = nodeElements[node];
+          if (el) {
+            el.classList.add("path-glow");
+            el.style.animation =
+              "pulse-glow 0.6s ease-out, wiggle 4s ease-in-out infinite";
+          }
+          const label = document.querySelector(
+            `#graphOutput text[data-node='${node}']`
+          );
+          if (label) {
+            label.classList.add("active-label");
+            label.style.animation = "wiggle 4s ease-in-out infinite";
+          }
+        }
+      }
+      function animateEdgeGlow(from, to) {
+        const svg = document.querySelector("#graphOutput svg");
+        if (!svg) return;
+        const fromCircle = nodeElements[from];
+        const toCircle = nodeElements[to];
+        if (!fromCircle || !toCircle) return;
+        const x1 = fromCircle.getAttribute("cx");
+        const y1 = fromCircle.getAttribute("cy");
+        const x2 = toCircle.getAttribute("cx");
+        const y2 = toCircle.getAttribute("cy");
+        const line = document.createElementNS(
+          "http://www.w3.org/2000/svg",
+          "line"
+        );
+        line.setAttribute("x1", x1);
+        line.setAttribute("y1", y1);
+        line.setAttribute("x2", x2);
+        line.setAttribute("y2", y2);
+        line.setAttribute("class", "edge-glow-line");
+
+        svg.appendChild(line);
+        setTimeout(() => svg.removeChild(line), 400);
+      }
+      function getLogElement() {
+        const windowWidth = window.innerWidth;
+        if (windowWidth >= 640 && windowWidth <= 1190) {
+          return document.getElementById("bfsLog_medium");
+        } else {
+          return document.getElementById("bfsLog");
+        }
+      }
+      function logStep(text) {
+        const log = getLogElement();
+        const line = document.createElement("div");
+        line.textContent = text;
+        log.appendChild(line);
+        log.scrollTop = log.scrollHeight;
+      }
+      function sleep(ms) {
+        return new Promise((resolve) => setTimeout(resolve, ms));
+      }
+      async function bfs(graph, source, destination) {
+        const visited = new Set();
+        const queue = [source];
+        const parent = {};
+        visited.add(source);
+        highlightNode(source, "pink");
+        logStep(`Start at node: ${source}`);
+        while (queue.length > 0) {
+          const current = queue.shift();
+          logStep(`Visiting node: ${current}`);
+          activateLabel(current);
+          await sleep(400);
+          if (current === destination) {
+            const path = [destination];
+            let node = destination;
+            while (node !== source) {
+              node = parent[node];
+              path.push(node);
+            }
+            path.reverse();
+            highlightPath(path, "lime");
+            logStep(`✅ BFS Path: ${path.join(" → ")}`);
+            return path;
+          }
+          for (const edge of graph[current]) {
+            const neighbor = edge.to;
+            if (!visited.has(neighbor)) {
+              visited.add(neighbor);
+              parent[neighbor] = current;
+              queue.push(neighbor);
+              animateEdgeGlow(current, neighbor);
+              highlightNode(neighbor, "pink");
+              logStep(`→ Queued node: ${neighbor} (parent: ${current})`);
+              await sleep(400);
+            }
+          }
+        }
+        logStep(`❌ No path from ${source} to ${destination}`);
+        return null;
+      }
+      async function dfs(graph, current, destination, visited, path, parent) {
+        visited.add(current);
+        highlightNode(current, "pink");
+        activateLabel(current);
+        logStep(`Visiting node: ${current}`);
+        await sleep(400);
+        if (current === destination) {
+          logStep(`✅ Destination ${destination} found!`);
+          return true;
+        }
+        for (const edge of graph[current]) {
+          const neighbor = edge.to;
+          if (!visited.has(neighbor)) {
+            parent[neighbor] = current;
+            logStep(`→ Exploring edge: ${current} → ${neighbor}`);
+            animateEdgeGlow(current, neighbor);
+            await sleep(400);
+            const found = await dfs(
+              graph,
+              neighbor,
+              destination,
+              visited,
+              path,
+              parent
+            );
+            if (found) return true;
+          }
+        }
+        logStep(`↩️ Backtracking from node: ${current}`);
+        return false;
+      }
+      class MinPriorityQueue {
+        constructor() {
+          this.items = [];
+        }
+        enqueue(element, priority) {
+          this.items.push({ element, priority });
+          this.items.sort((a, b) => a.priority - b.priority);
+        }
+        dequeue() {
+          return this.items.shift();
+        }
+        isEmpty() {
+          return this.items.length === 0;
+        }
+      }
+      async function dijkstra(graph, source, destination) {
+        const distances = {};
+        const visited = new Set();
+        const parent = {};
+        const pq = new MinPriorityQueue();
+        for (const node in graph) distances[node] = Infinity;
+        distances[source] = 0;
+        pq.enqueue(source, 0);
+        logStep(`Start at node: ${source}`);
+        highlightNode(source, "pink");
+        while (!pq.isEmpty()) {
+          const { element: current } = pq.dequeue();
+          if (visited.has(current)) continue;
+          visited.add(current);
+          logStep(`Visiting node: ${current}`);
+          highlightNode(current, "pink");
+          activateLabel(current);
+          await sleep(400);
+          if (parseInt(current) === destination) break;
+          for (const edge of graph[current]) {
+            const neighbor = edge.to;
+            const newDist = distances[current] + edge.weight;
+            if (newDist < distances[neighbor]) {
+              distances[neighbor] = newDist;
+              parent[neighbor] = current;
+              pq.enqueue(neighbor, newDist);
+              animateEdgeGlow(current, neighbor);
+              logStep(
+                `→ Updating ${neighbor}: distance = ${newDist} via ${current}`
+              );
+              await sleep(400);
+            }
+          }
+        }
+        if (!(destination in parent)) {
+          logStep(`❌ No path from ${source} to ${destination}`);
+          return null;
+        }
+        const path = [];
+        let node = destination;
+        while (node !== undefined) {
+          path.push(node);
+          node = parent[node];
+        }
+        path.reverse();
+        highlightPath(path, "orange");
+        logStep(`✅ Dijkstra Path: ${path.join(" → ")}`);
+      }
+      document.getElementById("generateBtn").addEventListener("click", () => {
+        const count = parseInt(document.getElementById("nodeCount").value);
+        if (isNaN(count) || count < 1 || count > 5) {
+          alert("Enter number between 1 and 5.");
+          return;
+        }
+        const selectedAlgo = document.getElementById("algorithm").value;
+        const showWeights = selectedAlgo === "dijkstra";
+        currentGraph = generateRandomGraph(count);
+        drawGraph(currentGraph, showWeights);
+        getLogElement().innerHTML = "";
+        document.getElementById("sourceNode").value = 0;
+        document.getElementById("destinationNode").value = count - 1;
+        document.getElementById("sourceNode").min = 0;
+        document.getElementById("sourceNode").max = count - 1;
+        document.getElementById("destinationNode").min = 0;
+        document.getElementById("destinationNode").max = count - 1;
+      });
+      document
+        .getElementById("traverseBtn")
+        .addEventListener("click", async () => {
+          const source = parseInt(document.getElementById("sourceNode").value);
+          const dest = parseInt(
+            document.getElementById("destinationNode").value
+          );
+          const algo = document.getElementById("algorithm").value;
+          clearPreviousTraversal();
+          if (
+            !currentGraph ||
+            isNaN(source) ||
+            isNaN(dest) ||
+            !(source in currentGraph) ||
+            !(dest in currentGraph)
+          ) {
+            alert("Please enter valid source and destination nodes.");
+            return;
+          }
+          if (algo === "bfs") {
+            await bfs(currentGraph, source, dest);
+          } else if (algo === "dfs") {
+            const visited = new Set();
+            const parent = {};
+            const path = [];
+            const found = await dfs(
+              currentGraph,
+              source,
+              dest,
+              visited,
+              path,
+              parent
+            );
+            if (found) {
+              let node = dest;
+              path.push(node);
+              while (node !== source) {
+                node = parent[node];
+                path.push(node);
+              }
+              path.reverse();
+              highlightPath(path, "lime");
+              logStep(`✅ DFS Path: ${path.join(" → ")}`);
+            } else {
+              logStep(`❌ No path found from ${source} to ${dest}.`);
+            }
+          } else if (algo === "dijkstra") {
+            await dijkstra(currentGraph, source, dest);
+          }
+        });
+      function clearPreviousTraversal() {
+        for (let id in nodeElements) {
+          const node = nodeElements[id];
+          node.setAttribute("fill", "#4F46E5");
+          node.classList.remove("node-glow", "path-glow");
+          node.style.animation = "none";
+          const label = document.querySelector(
+            `#graphOutput text[data-node='${id}']`
+          );
+          if (label) {
+            label.classList.remove("active-label");
+            label.style.animation = "none";
+          }
+        }
+        const svg = document.querySelector("#graphOutput svg");
+        if (svg) {
+          const oldGlows = svg.querySelectorAll(".edge-glow-line");
+          oldGlows.forEach((line) => svg.removeChild(line));
+        }
+        getLogElement().innerHTML = "";
+      }
+      const controlPanel = document.getElementById("controlPanel");
+      const logPanel = document.getElementById("logPanel");
+      const toggleLeftPanelBtn = document.getElementById("toggleLeftPanel");
+      const leftArrowIcon = document.getElementById("leftArrowIcon");
+      const toggleRightPanelBtn = document.getElementById("toggleRightPanel");
+      const rightArrowIcon = document.getElementById("rightArrowIcon");
+      let isLeftPanelOpen = true;
+      let isRightPanelOpen = true;
+      toggleLeftPanelBtn.addEventListener("click", () => {
+        isLeftPanelOpen = !isLeftPanelOpen;
+        if (isLeftPanelOpen) {
+          controlPanel.classList.remove("closed");
+          leftArrowIcon.style.transform = "rotate(0deg)";
+        } else {
+          controlPanel.classList.add("closed");
+          leftArrowIcon.style.transform = "rotate(180deg)";
+        }
+      });
+      toggleRightPanelBtn.addEventListener("click", () => {
+        isRightPanelOpen = !isRightPanelOpen;
+        if (isRightPanelOpen) {
+          logPanel.classList.remove("closed");
+          rightArrowIcon.style.transform = "rotate(0deg)";
+        } else {
+          logPanel.classList.add("closed");
+          rightArrowIcon.style.transform = "rotate(180deg)";
+        }
+      });
+      document.addEventListener("DOMContentLoaded", () => {
+        document.getElementById("generateBtn").click();
+      });
+    </script>
+    <svg width="0" height="0" style="position: absolute">
+      <defs>
+        <filter
+          id="handDrawnStroke"
+          x="-20%"
+          y="-20%"
+          width="140%"
+          height="140%"
+        >
+          <feTurbulence
+            type="fractalNoise"
+            baseFrequency="0.02"
+            numOctaves="3"
+            result="noise"
+          />
+          <feDisplacementMap
+            in="SourceGraphic"
+            in2="noise"
+            scale="6"
+            xChannelSelector="R"
+            yChannelSelector="G"
+          />
+        </filter>
+      </defs>
+    </svg>
+  </body>
+</html>
